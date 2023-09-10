@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Flag</title>
+    <!-- Include Bootstrap CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLwWTNgKzoF9JZATDvWaROcN3JOqDBszZWzA&usqp=CAU" type="image/x-icon">
+</head>
+
+<body>
+    <div id="app" class="container mt-5">
+        <h1>Feature Flag</h1>
+        <hr>
+        <div class="row">
+            <div class="col-lg-6">
+                <input v-model="flag.key" class="form-control" placeholder="flag-key">
+            </div>
+            <div class="col-lg-2">
+                <input v-model.number="flag.on" class="form-control" placeholder="ON">
+            </div>
+            <div class="col-lg-2">
+                <input v-model.number="flag.off" class="form-control" placeholder="OFF">
+            </div>
+            <div class="col-lg-2 ">
+                <button v-if="isUpdate" @click="updateFlag()" class="m-1 input-block-level form-control btn btn-sm btn-info">Update</button>
+                <button v-else @click="createFlag()" class="m-1 input-block-level form-control btn btn-sm btn-success">Create</button>
+            </div>
+        </div>
+        <table class="mt-3 table table-bordered">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Value</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(value, key) in flags" :key="key">
+                    <td>{{ key }}</td>
+                    <td><b>On</b> : {{value.on}} / <b>Off</b> : {{value.off}}</td>
+                    <td>
+                        <button @click="loadFlag(key,value)" class="btn btn-sm btn-info">Update</button>
+                        <!-- <button class="btn m-1 btn-sm btn-danger">Archive</button> -->
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="row">
+            <div class="col-lg-2">
+                <input v-model="testPayload.userID" class="form-control" placeholder="user_id">
+            </div>
+            <div class="col-lg-2">
+                <input v-model="testPayload.key" class="form-control" placeholder="flag-key">
+            </div>
+            <div class="col-lg-2 ">
+                <button v-else @click="getFlag()" class="m-1 input-block-level form-control btn btn-sm btn-primary">Fetch</button>
+            </div>
+            <div class="col-lg-2 m-1">
+                User Assignment : <b class="">{{testPayload.value}}</b>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://unpkg.com/vue@3.2.19/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.21.4/dist/axios.min.js"></script>
+
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    flags: {},
+                    flag: {},
+                    host: "http://159.223.90.45:8080",
+                    isUpdate: false,
+                    testPayload: {}
+                }
+            },
+            methods: {
+                async listFlag() {
+                    try {
+                        const response = await axios.get(this.host + '/flags')
+                        this.flags = response.data
+                    } catch (error) {
+                        console.error(error)
+                    }
+                },
+
+                async createFlag() {
+                    console.log(this.flag)
+
+                    const url = this.host + '/create'
+                    const requestBody = {
+                        key: this.flag.key,
+                        OnRolloutPercent: parseInt(this.flag.on),
+                        OffRolloutPercent: parseInt(this.flag.off)
+                    }
+
+                    console.log(JSON.stringify(requestBody))
+
+                    try {
+                        const response = await axios.post(url, requestBody)
+                    } catch (error) {
+                        console.error('Error:', error)
+                    }
+
+                    this.refresh()
+
+                },
+
+                async updateFlag() {
+                    console.log(this.flag)
+
+                    const url = this.host + '/update'
+                    const requestBody = {
+                        key: this.flag.key,
+                        OnRolloutPercent: parseInt(this.flag.on),
+                        OffRolloutPercent: parseInt(this.flag.off)
+                    }
+
+                    console.log(JSON.stringify(requestBody))
+
+                    try {
+                        const response = await axios.post(url, requestBody)
+                    } catch (error) {
+                        console.error('Error:', error)
+                    }
+
+                    this.refresh()
+                },
+
+                async getFlag() {
+                    console.log(this.testPayload)
+
+                    try {
+                        const response = await axios.get(this.host + '/get?user_id=' + this.testPayload.userID + '&flag_key=' + this.testPayload.key)
+                        this.testPayload.value = response.data
+                        console.log(this.testPayload)
+                    } catch (error) {
+                        console.error(error)
+                    }
+
+                    // this.refresh()
+                },
+
+                refresh() {
+                    this.flag = {}
+                    this.isUpdate = false
+                    this.testPayload = {}
+                    this.listFlag()
+                },
+
+                loadFlag(key, value) {
+                    console.log(key, value.on, value.off)
+                    this.flag = {
+                        key: key,
+                        on: value.on,
+                        off: value.off
+                    }
+                    this.isUpdate = true
+                }
+
+            },
+            mounted() {
+                this.listFlag()
+            }
+        })
+
+        app.mount('#app')
+    </script>
+</body>
+
+</html>
