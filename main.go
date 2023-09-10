@@ -16,7 +16,7 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 
 	n := runtime.NumCPU()
 	runtime.GOMAXPROCS(n)
-	log.Println("test traffic", n)
+	log.Println("test traffic 2", n)
 
 	quit := make(chan bool)
 
